@@ -1,0 +1,9 @@
+# --- Preset: Linux Data (Home directories, excluding caches) ---
++ /home/
++ /home/*/
+- /home/*/.cache/
+- /home/*/.local/share/Trash/
+- /home/*/.thumbnails/
+- /home/*/.gvfs/
+- /home/*/.dbus/
+- /home/*/.ssh/

@@ -1,0 +1,24 @@
+# Temporary files and cache
+- .cache/
+- .local/share/Trash/
+- .Trash/
+- tmp/
+- *.tmp
+- *.bak
+- *.swp
+
+# System specific files
+- .DS_Store
+- .AppleDouble
+- .Spotlight-V100
+- Thumbs.db
+- desktop.ini
+- .gvfs
+- .xsession-errors*
+- .dbus/
+
+# Application specific cache/locks
+- .mozilla/firefox/*/Cache/
+- .mozilla/firefox/*/lock
+- .dropbox/
+- .dropbox-dist/

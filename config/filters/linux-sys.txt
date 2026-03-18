@@ -1,0 +1,14 @@
+# --- Preset: Linux System (OS files, excluding dynamic/temp systems) ---
+- /dev/*
+- /proc/*
+- /sys/*
+- /tmp/*
+- /run/*
+- /mnt/*
+- /media/*
+- /lost+found
+- /var/cache/*
+- /var/tmp/*
+- /var/lib/docker/*
+- /var/lib/containerd/*
+- /var/log/*

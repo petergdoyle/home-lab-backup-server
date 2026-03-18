@@ -1,0 +1,10 @@
+# --- Preset: macOS Data ---
++ /Users/
++ /Users/*/
+- /Users/*/Library/Caches/
+- /Users/*/Library/Logs/
+- /Users/*/.Trash/
+- /Users/*/Library/Application Support/CloudDocs/
+- /Users/*/Library/Mobile Documents/
+- /Users/*/"iCloud Drive (Archive)"/
+- /Users/*/Library/Containers/com.apple.mail/Data/Library/Mail/V*/MailData/Envelope Index*

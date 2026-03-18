@@ -17,6 +17,8 @@ help:
 	@echo "========================="
 	@echo "Available targets:"
 	@echo "  setup         - Initialize local development environment (venv, ssh keys, dirs)"
+	@echo "  new-job       - Interactive prompt to build a new backup configuration"
+	@echo "  copy-key      - Copy the SSH public key to a remote machine"
 	@echo "  build         - Build Docker images"
 	@echo "  deploy        - Deploy the service using docker-compose"
 	@echo "  stop          - Stop the service"
@@ -26,7 +28,12 @@ help:
 	@echo ""
 	@echo "Backup Jobs (dynamically discovered from $(CONFIG_DIR)/):"
 	@$(if $(JOBS), \
-		$(foreach job,$(JOBS),echo "  backup-$(job) - Run backup for job: $(job)";), \
+		$(foreach job,$(JOBS),echo "  backup-$(job)  - Run backup for job: $(job)";), \
+		echo "  (No jobs found in $(CONFIG_DIR)/)")
+	@echo ""
+	@echo "Dry-Run Backup Jobs:"
+	@$(if $(JOBS), \
+		$(foreach job,$(JOBS),echo "  dry-run-$(job) - Dry-run backup for job: $(job)";), \
 		echo "  (No jobs found in $(CONFIG_DIR)/)")
 
 setup:
@@ -36,13 +43,23 @@ setup:
 		echo "Creating virtual environment..."; \
 		python3 -m venv $(VENV); \
 	fi
-	@if [ ! -f $(SSH_DIR)/id_rsa ]; then \
+	@if [ ! -f $(SSH_DIR)/id_ed25519 ]; then \
 		echo "Generating SSH key pair..."; \
-		ssh-keygen -t rsa -b 4096 -f $(SSH_DIR)/id_rsa -N ""; \
+		ssh-keygen -t ed25519 -f $(SSH_DIR)/id_ed25519 -N ""; \
 	fi
 	@echo "Installing python dependencies locally..."
 	@$(PIP) install -r requirements.txt
 	@echo "✅ Setup complete."
+
+new-job:
+	@if [ ! -d $(VENV) ]; then echo "Error: Virtual environment not found. Run 'make setup' first."; exit 1; fi
+	@$(PYTHON) $(SCRIPTS_DIR)/build_config.py
+
+copy-key:
+	@echo "This will copy your new public key to a remote server."
+	@read -p "Enter user@hostname (e.g., admin@192.168.1.50): " target; \
+	if [ -z "$$target" ]; then echo "Target cannot be empty."; exit 1; fi; \
+	ssh-copy-id -i $(SSH_DIR)/id_ed25519.pub $$target
 
 build:
 	docker-compose build
@@ -74,3 +91,9 @@ $(addprefix backup-,$(JOBS)): backup-%: $(CONFIG_DIR)/%.yaml
 	@if [ ! -d $(VENV) ]; then echo "Error: Virtual environment not found. Run 'make setup' first."; exit 1; fi
 	@echo "🚀 Starting backup job: $*"
 	$(PYTHON) $(SCRIPTS_DIR)/backup.py $<
+
+# Dynamic dry-run targets
+$(addprefix dry-run-,$(JOBS)): dry-run-%: $(CONFIG_DIR)/%.yaml
+	@if [ ! -d $(VENV) ]; then echo "Error: Virtual environment not found. Run 'make setup' first."; exit 1; fi
+	@echo "🧪 Starting dry-run backup job: $*"
+	$(PYTHON) $(SCRIPTS_DIR)/backup.py $< --dry-run

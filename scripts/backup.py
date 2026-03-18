@@ -6,7 +6,7 @@ import argparse
 import datetime
 from pathlib import Path
 
-def run_backup(config_path, log_to_file=True):
+def run_backup(config_path, log_to_file=True, dry_run=False):
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
 
@@ -14,10 +14,11 @@ def run_backup(config_path, log_to_file=True):
     host = config.get('host')
     user = config.get('user', 'root')
     port = config.get('port', 22)
-    ssh_key = config.get('ssh_key', 'ssh/id_rsa')
+    ssh_key = config.get('ssh_key', 'ssh/id_ed25519')
     mode = config.get('mode', 'data')
     source_paths = config.get('source_paths', [])
     excludes = config.get('exclude', [])
+    filters = config.get('filters', [])
     backup_root = config.get('backup_root', '/backup')
 
     # Handle local vs docker pathing
@@ -30,8 +31,10 @@ def run_backup(config_path, log_to_file=True):
     job_id = name.replace(' ', '_').lower()
     target_dir = os.path.join(backup_root, job_id)
     log_dir = os.path.join(backup_root, 'logs')
-    os.makedirs(target_dir, exist_ok=True)
-    os.makedirs(log_dir, exist_ok=True)
+    # If dry run, don't create directories if they don't exist, to avoid side effects
+    if not dry_run:
+        os.makedirs(target_dir, exist_ok=True)
+        os.makedirs(log_dir, exist_ok=True)
 
     log_file = os.path.join(log_dir, f"{job_id}.log")
     
@@ -39,11 +42,14 @@ def run_backup(config_path, log_to_file=True):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         formatted_msg = f"[{timestamp}] {msg}"
         print(formatted_msg)
-        if log_to_file:
+        if log_to_file and not dry_run and os.path.exists(log_dir):
             with open(log_file, 'a') as f:
                 f.write(formatted_msg + "\n")
 
-    log(f"🚀 Starting backup for {name} ({host})")
+    if dry_run:
+        log(f"🧪 [DRY RUN] Starting dry run backup for {name} ({host})")
+    else:
+        log(f"🚀 Starting backup for {name} ({host})")
 
     # Base rsync command
     ssh_opts = f"ssh -i {ssh_key} -p {port} -o StrictHostKeyChecking=no"
@@ -53,11 +59,24 @@ def run_backup(config_path, log_to_file=True):
         "--delete",
         "-e", ssh_opts
     ]
+    
+    if dry_run:
+        cmd.append("--dry-run")
 
-    # Add filters
-    filter_file = Path("config/filters.txt")
-    if filter_file.exists():
-        cmd.extend(["--filter", f"merge {filter_file}"])
+    # Add filters from the config list
+    for f in filters:
+        filter_file = Path("config/filters") / f
+        if filter_file.exists():
+            cmd.extend(["--filter", f"merge {filter_file}"])
+        else:
+            log(f"⚠️ Warning: Filter file {filter_file} not found.")
+
+    # Legacy fallback: if filters.txt exists in root config and no filters specified
+    if not filters:
+        legacy_filter = Path("config/filters.txt")
+        if legacy_filter.exists():
+            cmd.extend(["--filter", f"merge {legacy_filter}"])
+
 
     for exc in excludes:
         cmd.extend(["--exclude", exc])
@@ -101,6 +120,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Home-Lab Backup Orchestrator")
     parser.add_argument("config", help="Path to the YAML configuration file")
     parser.add_argument("--no-log", action="store_false", dest="log_to_file", help="Disable logging to file")
+    parser.add_argument("--dry-run", action="store_true", help="Perform a dry run without copying files")
     args = parser.parse_args()
     
-    run_backup(args.config, log_to_file=args.log_to_file)
+    run_backup(args.config, log_to_file=args.log_to_file, dry_run=args.dry_run)
