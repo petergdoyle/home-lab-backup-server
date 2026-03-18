@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  backup-server:
+    build: .
+    container_name: backup-server
+    volumes:
+      - ./config:/app/config
+      - ./ssh:/app/ssh
+      - ./data:/backup
+      - ./scripts:/app/scripts
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
+  dashboard:
+    image: python:3.11-slim-bookworm
+    container_name: backup-dashboard
+    volumes:
+      - ./data:/backup
+      - ./scripts:/app/scripts
+    working_dir: /app
+    command: ["sh", "-c", "pip install streamlit pyyaml pandas schedule python-crontab && streamlit run scripts/dashboard.py --server.port 8502"]
+    ports:
+      - "8502:8502"
+    restart: unless-stopped

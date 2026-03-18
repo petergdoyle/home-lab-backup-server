@@ -1,0 +1,21 @@
+# Sample backup configuration for a Linux server
+name: "Sample Linux Server"
+host: "localhost" # or IP/hostname
+user: "pi"
+port: 22
+ssh_key: "ssh/id_rsa"
+mode: "data" # options: data, full
+backup_root: "/backup" # destination root inside the backup server
+
+# specific paths to include if not using full mode
+source_paths:
+  - "/home/pi/documents"
+  - "/etc/nginx"
+
+# additional excludes
+exclude:
+  - "*.tmp"
+  - ".DS_Store"
+
+# schedule (optional, for the dashboard/cron logic)
+schedule: "0 2 * * *" # daily at 2am

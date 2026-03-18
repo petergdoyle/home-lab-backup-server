@@ -1,0 +1,15 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# App Data
+data/
+ssh/id_rsa
+ssh/id_rsa.pub
+
+# macOS
+.DS_Store
+
+# Docker
+.docker_temp/
