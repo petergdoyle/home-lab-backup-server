@@ -1,0 +1,17 @@
+name: peters imac
+host: 192.168.20.12
+user: peter
+port: 22
+ssh_key: ssh/id_ed25519
+mode: data
+filters:
+- common-includes.txt
+- macos-data.txt
+- common-excludes.txt
+source_paths:
+- /Users/peter
+exclude:
+- "phdata-exported/Projects/"
+snapshot: true
+delete_excluded: true
+backup_root: data/backups 

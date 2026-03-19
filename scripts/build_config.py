@@ -3,8 +3,11 @@ import os
 from pathlib import Path
 
 def prompt(message, default=None):
-    if default:
-        res = input(f"{message} [{default}]: ").strip()
+    if default is not None:
+        if default == "":
+            res = input(f"{message}: ").strip()
+        else:
+            res = input(f"{message} [{default}]: ").strip()
         return res if res else default
     else:
         res = input(f"{message}: ").strip()
@@ -71,6 +74,10 @@ def build_config():
                 break
             config['exclude'].append(exc)
             
+    config['snapshot'] = prompt_bool("\nDo you want to automatically compress a point-in-time snapshot archive (.tar.gz) after each backup?", "n")
+    
+    config['delete_excluded'] = prompt_bool("\nShould we purge (delete-excluded) files from the mirror if they are added to filters later?", "n")
+
     config['backup_root'] = prompt("\nTarget backup directory inside the backup-server", "/backup")
     
     schedule = prompt("Schedule (e.g., '02:00' for daily at 2AM, or 'every 60 minutes'. Leave blank for no schedule)", "")

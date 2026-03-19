@@ -1,0 +1,9 @@
+# --- Shell & SSH Customizations (Keep) ---
++ /.ssh/***
++ /.zshrc
++ /.zshenv
++ /.zprofile
++ /.bashrc
++ /.bash_profile
++ /.bash_history
++ /.profile

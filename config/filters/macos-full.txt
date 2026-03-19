@@ -1,0 +1,9 @@
+# --- Preset: macOS Full Backup (System + Data) ---
+# Use this when you want to backup everything needed to completely restore a user profile.
+- Library/Caches/
+- Library/Logs/
+- .Trash/
+- iCloud Drive (Archive)/
+- *.icloud
+- "Google Drive"/
+- Library/CloudStorage/

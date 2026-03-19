@@ -4,6 +4,7 @@ import sys
 import os
 import argparse
 import datetime
+import fcntl
 from pathlib import Path
 
 def run_backup(config_path, log_to_file=True, dry_run=False):
@@ -28,13 +29,33 @@ def run_backup(config_path, log_to_file=True, dry_run=False):
         backup_root = str(project_root / "data")
         print(f"ℹ️ Redirecting /backup to local {backup_root}")
 
-    job_id = name.replace(' ', '_').lower()
+    # Ensure backup_root exists for the lock file
+    os.makedirs(backup_root, exist_ok=True)
+    
+    # Global Job Lock
+    lock_file_path = os.path.join(backup_root, ".backup.lock")
+    lock_file = open(lock_file_path, "w")
+    try:
+        fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        print(f"⚠️ [CONCURRENCY BLOCKED] Another backup job is already running.")
+        print(f"Check active processes or the dashboard before trying again.")
+        return False
+
+    job_id = Path(config_path).stem
     target_dir = os.path.join(backup_root, job_id)
-    log_dir = os.path.join(backup_root, 'logs')
-    # If dry run, don't create directories if they don't exist, to avoid side effects
+    
+    # Always send logs to the central data/logs directory regardless of backup_root
+    project_root = Path(__file__).parent.parent
+    log_dir = os.path.join(str(project_root), "data", "logs")
+    
+    # Always create the log dir if we are logging to file
+    if log_to_file:
+        os.makedirs(log_dir, exist_ok=True)
+        
+    # If dry run, don't create target_dir if it doesn't exist, to avoid side effects
     if not dry_run:
         os.makedirs(target_dir, exist_ok=True)
-        os.makedirs(log_dir, exist_ok=True)
 
     log_file = os.path.join(log_dir, f"{job_id}.log")
     
@@ -42,7 +63,7 @@ def run_backup(config_path, log_to_file=True, dry_run=False):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         formatted_msg = f"[{timestamp}] {msg}"
         print(formatted_msg)
-        if log_to_file and not dry_run and os.path.exists(log_dir):
+        if log_to_file and os.path.exists(log_dir):
             with open(log_file, 'a') as f:
                 f.write(formatted_msg + "\n")
 
@@ -59,6 +80,14 @@ def run_backup(config_path, log_to_file=True, dry_run=False):
         "--delete",
         "-e", ssh_opts
     ]
+
+    # Purge excluded files from mirror if requested in YAML or via ENV
+    delete_excluded = config.get('delete_excluded', False)
+    if os.environ.get('DELETE_EXCLUDED', 'false').lower() == 'true':
+        delete_excluded = True
+
+    if delete_excluded:
+        cmd.append("--delete-excluded")
     
     if dry_run:
         cmd.append("--dry-run")
@@ -67,16 +96,13 @@ def run_backup(config_path, log_to_file=True, dry_run=False):
     for f in filters:
         filter_file = Path("config/filters") / f
         if filter_file.exists():
-            cmd.extend(["--filter", f"merge {filter_file}"])
+            with open(filter_file, 'r') as ff:
+                for line in ff:
+                    line = line.strip()
+                    if line and not line.startswith('#'):
+                        cmd.extend(["--filter", line])
         else:
             log(f"⚠️ Warning: Filter file {filter_file} not found.")
-
-    # Legacy fallback: if filters.txt exists in root config and no filters specified
-    if not filters:
-        legacy_filter = Path("config/filters.txt")
-        if legacy_filter.exists():
-            cmd.extend(["--filter", f"merge {legacy_filter}"])
-
 
     for exc in excludes:
         cmd.extend(["--exclude", exc])
@@ -98,10 +124,17 @@ def run_backup(config_path, log_to_file=True, dry_run=False):
         
         log(f"Executing: {' '.join(full_cmd)}")
         try:
-            process = subprocess.Popen(full_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            process = subprocess.Popen(
+                full_cmd, 
+                stdout=subprocess.PIPE, 
+                stderr=subprocess.STDOUT, 
+                text=True,
+                encoding='utf-8',
+                errors='replace'
+            )
             for line in process.stdout:
-                if log_to_file:
-                    with open(log_file, 'a') as f:
+                if log_to_file and os.path.exists(log_dir):
+                    with open(log_file, 'a', encoding='utf-8') as f:
                         f.write(line)
                 print(line, end='')
             process.wait()
@@ -113,7 +146,31 @@ def run_backup(config_path, log_to_file=True, dry_run=False):
         except Exception as e:
             log(f"❌ Error executing rsync: {e}")
             success = False
-    
+
+    if success and config.get('snapshot', False) and not dry_run:
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        archive_name = f"{job_id}_{timestamp}.tar.gz"
+        archive_path = os.path.join(backup_root, archive_name)
+        log(f"📦 Creating snapshot archive: {archive_name} ...")
+        
+        tar_cmd = ["tar", "-czf", archive_path, "-C", backup_root, job_id]
+        try:
+            tar_proc = subprocess.Popen(tar_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8', errors='replace')
+            for line in tar_proc.stdout:
+                if log_to_file and os.path.exists(log_dir):
+                    with open(log_file, 'a', encoding='utf-8') as f:
+                        f.write(line)
+                print(line, end='')
+            tar_proc.wait()
+            if tar_proc.returncode != 0:
+                log(f"❌ Snapshot archiving failed with return code {tar_proc.returncode}")
+                success = False
+            else:
+                log(f"✅ Snapshot successfully saved at {archive_path}")
+        except Exception as e:
+            log(f"❌ Error executing tar: {e}")
+            success = False
+            
     return success
 
 if __name__ == "__main__":

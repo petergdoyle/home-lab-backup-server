@@ -31,9 +31,13 @@ help:
 		$(foreach job,$(JOBS),echo "  backup-$(job)  - Run backup for job: $(job)";), \
 		echo "  (No jobs found in $(CONFIG_DIR)/)")
 	@echo ""
-	@echo "Dry-Run Backup Jobs:"
 	@$(if $(JOBS), \
 		$(foreach job,$(JOBS),echo "  dry-run-$(job) - Dry-run backup for job: $(job)";), \
+		echo "  (No jobs found in $(CONFIG_DIR)/)")
+	@echo ""
+	@echo "Log Tailing Jobs:"
+	@$(if $(JOBS), \
+		$(foreach job,$(JOBS),echo "  tail-$(job)    - Tail logs for job: $(job)";), \
 		echo "  (No jobs found in $(CONFIG_DIR)/)")
 
 setup:
@@ -90,10 +94,31 @@ clean:
 $(addprefix backup-,$(JOBS)): backup-%: $(CONFIG_DIR)/%.yaml
 	@if [ ! -d $(VENV) ]; then echo "Error: Virtual environment not found. Run 'make setup' first."; exit 1; fi
 	@echo "🚀 Starting backup job: $*"
-	$(PYTHON) $(SCRIPTS_DIR)/backup.py $<
+	@DELETE_EXCLUDED=$(DELETE_EXCLUDED) $(PYTHON) $(SCRIPTS_DIR)/backup.py $< > /dev/null 2>&1 & \
+	if [ "$(TAIL_LOG)" = "true" ]; then \
+		echo "📊 Tailing log for $*..."; \
+		sleep 1; \
+		tail -f data/logs/$*.log; \
+	else \
+		echo "✅ Job $* is now running in background."; \
+		echo "   Tail logs with: make tail-$*"; \
+	fi
 
 # Dynamic dry-run targets
 $(addprefix dry-run-,$(JOBS)): dry-run-%: $(CONFIG_DIR)/%.yaml
 	@if [ ! -d $(VENV) ]; then echo "Error: Virtual environment not found. Run 'make setup' first."; exit 1; fi
 	@echo "🧪 Starting dry-run backup job: $*"
-	$(PYTHON) $(SCRIPTS_DIR)/backup.py $< --dry-run
+	DELETE_EXCLUDED=$(DELETE_EXCLUDED) $(PYTHON) $(SCRIPTS_DIR)/backup.py $< --dry-run
+
+# Dynamic tail targets
+$(addprefix tail-,$(JOBS)): tail-%:
+	@if [ -f data/logs/$*.log ]; then \
+		tail -f data/logs/$*.log; \
+	else \
+		echo "⚠️ No log file found for $*. Run a backup first."; \
+	fi
+
+# Dynamic kill targets
+$(addprefix backup-kill-,$(JOBS)): backup-kill-%:
+	@echo "🛑 Stopping backup job: $*"
+	@pkill -f "backup.py $(CONFIG_DIR)/$*.yaml" || echo "⚠️ No active job found for $*"

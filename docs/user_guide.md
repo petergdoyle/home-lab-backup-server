@@ -1,81 +1,116 @@
-# Home-Lab Backup Server - User Guide
+# 📖 Home-Lab Backup Server - User Guide
 
-This guide explains how to configure, test, and execute backup jobs using the Home-Lab Backup Server.
+This guide provides practical examples for managing your backups, logic for filtering data, and advanced configuration directives.
 
-## 1. Creating a New Backup Job (`make new-job`)
+---
 
-The easiest way to configure a new backup is to use the interactive configuration builder. 
-From your terminal, run:
+## 🚀 Quick Start
+
+### 1. Initialize the Server
+Before running any backups, set up your local environment:
+```bash
+make setup
+```
+*This creates required directories (`data/`, `config/`), sets up a Python virtual environment, and generates your SSH key pair.*
+
+### 2. Connect a New Machine
+To back up a remote machine, you must first copy your SSH public key to it:
+```bash
+make copy-key
+# Standard format: user@192.168.1.10
+```
+
+### 3. Create a Backup Job
+Use the interactive wizard to build your configuration:
 ```bash
 make new-job
 ```
-
-You will be prompted to enter the following information:
-- **Job Name**: A human-readable name (e.g., `Remote iMac`).
-- **Configuration filename**: The name of the `.yaml` file to save it as (e.g., `remote-imac.yaml`).
-- **Target Host**: The IP address or hostname of the machine you want to backup (e.g., `192.168.1.100`).
-- **SSH Username**: The username on the remote machine (e.g., `admin`).
-- **SSH Port**: Default is `22`.
-- **SSH Private Key**: Default is `ssh/id_ed25519`.
-- **Backup Mode**: 
-  - `1` (Data): Backup specific directories you provide.
-  - `2` (Full): Backup the entire OS starting from root `/`.
-
-### Applying Filters
-The builder will ask if you want to apply predefined filter sets. These live in the `config/filters/` directory:
-- `macos-data.txt`: Excludes macOS-specific caches, trash, and active iCloud Drive files.
-- `linux-data.txt`: Excludes Linux user caches and thumbnails.
-- `linux-sys.txt`: Excludes temporary OS paths (`/dev`, `/proc`, `/tmp`, etc.).
-- `common-excludes.txt`: Excludes browser caches, application locks, and general `.tmp` files.
-
-### Custom Paths and Schedule
-- **Source path**: Provide the absolute path(s) you want to backup (e.g., `/Users/yourusername`).
-- **Custom Excludes**: Add any specific file extensions or folders you want to ignore.
-- **Target Backup Directory**: Where the files will live on the backup server (default is `/backup`).
-- **Schedule**: Enter a time (e.g., `02:00` for daily at 2AM) or an interval (`every 60 minutes`). Leave blank for manual on-demand execution only.
+*The wizard will ask for the host, username, folders to back up, and which filter sets (macOS, Linux, etc.) to apply.*
 
 ---
 
-## 2. Copying the SSH Key (`make copy-key`)
+## 🛠 Backup Commands
 
-Before `rsync` can connect and pull data, the remote machine must trust the backup server's SSH key.
-Run the following convenience command:
+Once you have a job configured (e.g., `peters-imac.yaml`), you can run it using these dynamic targets:
+
+### Run a Standard Backup (Background)
+Syncs the remote data to the local mirror. This command runs in the background.
 ```bash
-make copy-key
+make backup-<job_name>
 ```
-You will be prompted for:
-- `user@hostname`: (e.g., `admin@192.168.1.100`)
+*By default, this is silent. You can tail the log immediately by adding `TAIL_LOG=true`:*
+```bash
+make backup-<job_name> TAIL_LOG=true
+```
 
-This will run `ssh-copy-id` and ask for the remote machine's password once. Afterward, the backup server will have passwordless access.
+### Monitoring Progress
+To view the live log output for an active or previous job:
+```bash
+make tail-<job_name>
+```
+
+### Terminating a Running Job
+To stop an active backup job immediately:
+```bash
+make backup-kill-<job_name>
+```
+
+### Global Locking
+The backup server enforced a **global lock**. If you attempt to start a `make backup-*` job while another is already running, the new attempt will be blocked with a warning. This prevents resource contention on your home-lab bandwidth and disk.
+
+### Run a Dry Run
+See exactly what files would be transferred or deleted without actually touching any data.
+```bash
+make dry-run-<job_name>
+```
 
 ---
 
-## 3. Testing with a Dry-Run Backup
+## 🧹 Purge Control (`DELETE_EXCLUDED`)
 
-Before writing any files to disk, it is highly recommended to perform a dry-run. A dry-run calculates exactly what files `rsync` intends to transfer and highlights any permission or connectivity issues without transferring data.
+By default, `rsync` will not delete files from the backup server if they are added to an "Exclude" list later. To force a purge of "junk" files that you've recently filtered out, use the `DELETE_EXCLUDED` directive.
 
-Run:
-```bash
-make dry-run-<job_filename>
+### Option A: Permanent (YAML)
+Add this to your `config/your-job.yaml` to always keep the mirror 100% clean:
+```yaml
+delete_excluded: true
 ```
-*Note: Exclude the `.yaml` extension. For a file named `remote-imac.yaml`, the command is `make dry-run-remote-imac`.*
 
-Review the console output to ensure the correct files are targeted and that none of your intended exclusions slip through.
+### Option B: On-Demand (CLI)
+Run a one-time purge without changing your config file:
+```bash
+make backup-<job_name> DELETE_EXCLUDED=true
+```
 
 ---
 
-## 4. Running Backups
+## 📦 Snapshots & Archiving
 
-### On-Demand Locally
-To manually run a backup job right now, run:
-```bash
-make backup-<job_filename>
-```
+If you want to keep point-in-time "versions" of your backups rather than just a live mirror:
 
-### Scheduled via Docker
-If you've set a `schedule:` in your job configuration, the long-running Docker service will handle it automatically.
-Ensure the service is running:
-1. `make build`
-2. `make deploy`
+1.  **Enable Snapshots**: Set `snapshot: true` in your job YAML.
+2.  **Run Backup**: Each time the backup completes, the server will create a timestamped `.tar.gz` archive in `data/backups/`.
 
-You can monitor the service status and view logs via the dashboard at `http://localhost:8502`.
+---
+
+## 🖥 Deployment (Docker)
+
+To run the backup server as a professional background service with an automated scheduler and dashboard:
+
+1.  **Build**: `make build`
+2.  **Start**: `make deploy`
+3.  **Logs**: `make service-logs`
+4.  **Stop**: `make stop`
+
+### The Dashboard
+Once deployed, visit the live monitoring UI:
+**URL**: `http://localhost:8502`
+
+---
+
+## 📂 Project Structure
+- `config/`: Your job YAML files.
+- `config/filters/`: Modular filter sets (`macos-data.txt`, `common-excludes.txt`, etc.).
+- `data/backups/`: Where your mirrored data and snapshots live.
+- `data/logs/`: Detailed execution logs for every job.
+- `ssh/`: Your backup server's identity keys.
