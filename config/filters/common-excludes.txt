@@ -49,6 +49,10 @@
 - .node-gyp/
 - .cargo/registry/
 - **/node_modules/
+- .atom/compile-cache/
+- .atom/style-manager/
+- .atom/snapshot-cache/
+- .atom/storage/
 
 # --- Python Development ---
 - .venv/
