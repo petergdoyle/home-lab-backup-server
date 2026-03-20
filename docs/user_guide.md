@@ -49,6 +49,13 @@ To view the live log output for an active or previous job:
 make tail-<job_name>
 ```
 
+### Job Status Overview
+To see a high-level report of all jobs and their current state (Idle vs. Running):
+```bash
+make status
+```
+*For a specific job only:* `make status-<job_name>`
+
 ### Terminating a Running Job
 To stop an active backup job immediately:
 ```bash

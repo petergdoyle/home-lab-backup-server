@@ -23,7 +23,8 @@ help:
 	@echo "  deploy        - Deploy the service using docker-compose"
 	@echo "  stop          - Stop the service"
 	@echo "  service-logs  - View logs from the backup-server container"
-	@echo "  dashboard     - Open the dashboard (http://localhost:8502)"
+	@echo "  status         - Show overview of all jobs and active status"
+	@echo "  logs           - View container logs (if deployed)"
 	@echo "  clean         - Remove logs and temporary files"
 	@echo ""
 	@echo "Backup Jobs (dynamically discovered from $(CONFIG_DIR)/):"
@@ -116,6 +117,31 @@ $(addprefix tail-,$(JOBS)): tail-%:
 		tail -f data/logs/$*.log; \
 	else \
 		echo "⚠️ No log file found for $*. Run a backup first."; \
+	fi
+
+# Dynamic status targets
+$(addprefix status-,$(JOBS)): status-%:
+	@PID=$$(pgrep -f "backup.py $(CONFIG_DIR)/$*.yaml"); \
+	if [ -n "$$PID" ]; then \
+		echo "🟢 Job $* is RUNNING (PID: $$PID)"; \
+		echo "   Last output: $$(tail -n 1 data/logs/$*.log 2>/dev/null || echo 'Starting...')"; \
+	else \
+		echo "⚪ Job $* is IDLE"; \
+		if [ -f data/logs/$*.log ]; then \
+			echo "   Last Activity: $$(grep -oE '\[[-0-9: ]+\]' data/logs/$*.log | tail -n 1 | tr -d '[]' || echo 'Unknown')"; \
+		fi \
+	fi
+
+# Global status
+status:
+	@echo "📊 Home-Lab Backup Status Overview"
+	@echo "================================"
+	@$(foreach job,$(JOBS),$(MAKE) --no-print-directory status-$(job);)
+	@LOCK_PID=$$(lsof -t data/backups/.backup.lock 2>/dev/null); \
+	if [ -n "$$LOCK_PID" ]; then \
+		echo "\n🔒 Global Lock held by PID: $$LOCK_PID"; \
+	else \
+		echo "\n🔓 Global Lock is FREE"; \
 	fi
 
 # Dynamic kill targets
