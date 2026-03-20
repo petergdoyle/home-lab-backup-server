@@ -5,5 +5,5 @@
 - .Trash/
 - iCloud Drive (Archive)/
 - *.icloud
-- "Google Drive"/
+- Google Drive/
 - Library/CloudStorage/

@@ -104,57 +104,57 @@
 - **/out/
 
 # --- Adobe Creative Cloud ---
-- "Adobe/Creative Cloud Libraries/"
-- "Adobe/CameraRaw/Cache/"
-- "Adobe/Common/Media Cache Files/"
-- "Adobe/Common/PTX/"
-- "*.lrlibrary/"
-- "*.lrdata/"
-- "*.lrcat-data"
-- "Lightroom Catalog Previews.lrdata/"
-- "Lightroom Catalog Smart Previews.lrdata/"
+- Adobe/Creative Cloud Libraries/
+- Adobe/CameraRaw/Cache/
+- Adobe/Common/Media Cache Files/
+- Adobe/Common/PTX/
+- **/*.lrlibrary/
+- **/*.lrdata/
+- **/*.lrcat-data
+- Lightroom Catalog Previews.lrdata/
+- Lightroom Catalog Smart Previews.lrdata/
 
 # --- Video Editing (FCPX / Premiere / DaVinci) ---
-- "Final Cut Pro Library.fcpbundle/*/Render Files/"
-- "Final Cut Pro Library.fcpbundle/*/Analysis Files/"
-- "Final Cut Pro Library.fcpbundle/*/Transcoded Media/"
-- "Capture One/Cache/"
-- "DaVinci Resolve/CacheClip/"
-- "DaVinci Resolve/ProxyMedia/"
+- Final Cut Pro Library.fcpbundle/*/Render Files/
+- Final Cut Pro Library.fcpbundle/*/Analysis Files/
+- Final Cut Pro Library.fcpbundle/*/Transcoded Media/
+- Capture One/Cache/
+- DaVinci Resolve/CacheClip/
+- DaVinci Resolve/ProxyMedia/
 
 # --- Audio Production (Logic / Ableton) ---
-- "Logic/Project File Backups/"
-- "Ableton/Factory Packs/"
-- "Audio Music Apps/Web Cache/"
-- "*.omf"
+- Logic/Project File Backups/
+- Ableton/Factory Packs/
+- Audio Music Apps/Web Cache/
+- **/*.omf
 - "*.bak"
 
 # --- Image Manipulation & Design ---
-- ".caches/photoshop/"
-- "Figma/DesktopProfile/Canvases/"
-- "Canva/Caches/"
+- .caches/photoshop/
+- Figma/DesktopProfile/Canvases/
+- Canva/Caches/
 
 # --- Amazon Music & MP3 ---
-- "Amazon/Amazon Music/Cache/"
-- "Amazon/Amazon Music/Data/"
-- "amazonmp3/.imagecache/"
-- "amazonmp3/.metadacache/"
+- Amazon/Amazon Music/Cache/
+- Amazon/Amazon Music/Data/
+- amazonmp3/.imagecache/
+- amazonmp3/.metadacache/
 
 # --- Spotify ---
-- "Spotify/PersistentCache/"
-- "Spotify/Users/*/Data/"
-- "Spotify/Users/*/Browser/"
+- Spotify/PersistentCache/
+- Spotify/Users/*/Data/
+- Spotify/Users/*/Browser/
 
 # --- Apple Music & iTunes ---
 - Library/Caches/com.apple.Music/
 - Library/Caches/com.apple.iTunes/
-- "iTunes/iTunes Media/Apple Music/"
-- "Music/Music/Media.localized/Subscription Play Cache/"
+- iTunes/iTunes Media/Apple Music/
+- Music/Music/Media.localized/Subscription Play Cache/
 
 # --- Video Streaming (Plex, Netflix, etc.) ---
-- "Plex Media Server/Cache/"
-- "Plex Media Server/Plug-in Support/Caches/"
-- "Plex Media Server/Media/localhost/"
+- Plex Media Server/Cache/
+- Plex Media Server/Plug-in Support/Caches/
+- Plex Media Server/Media/localhost/
 - Library/Caches/com.netflix.Netflix/
 - Library/Caches/com.hulu.Plus/
 
@@ -165,17 +165,17 @@
 - Library/Application Support/Discord/Cache/
 
 # --- Photography App "Gunk" ---
-- "**/Photos Library.photoslibrary/"
-- "**/Photo Booth Library/Recents.plist"
-- "**/Photo Booth Library/Contents/"
-- "**/iPhoto Library.photolibrary/Thumbnails/"
-- "**/.BridgeCache/"
-- "**/.BridgeCacheT/"
-- "**/.picasa.ini"
-- "**/.Thumbnails/"
+- **/Photos Library.photoslibrary/
+- **/Photo Booth Library/Recents.plist
+- **/Photo Booth Library/Contents/
+- **/iPhoto Library.photolibrary/Thumbnails/
+- **/.BridgeCache/
+- **/.BridgeCacheT/
+- **/.picasa.ini
+- **/.Thumbnails/
 
 # --- Luminar Neo Storage Junk ---
-- "**/Luminar Neo Catalog/cache_db.db"
-- "**/Luminar Neo Catalog/History/"
-- "**/Luminar Neo Catalog/Backups/"
-- "**/Luminar Neo Catalog/Sample Images/"
+- **/Luminar Neo Catalog/cache_db.db
+- **/Luminar Neo Catalog/History/
+- **/Luminar Neo Catalog/Backups/
+- **/Luminar Neo Catalog/Sample Images/

@@ -2,25 +2,28 @@
 - /.*
 
 # --- System & Application Temp Files ---
-- .DS_Store
-- .AppleDouble
-- .LSOverride
-- .Spotlight-V100/
-- .Trashes/
-- .DocumentRevisions-V100/
-- .fseventsd/
-- .VolumeIcon.icns
-- .com.apple.timemachine.donotpresent
+- **/.DS_Store
+- **/.AppleDouble
+- **/.LSOverride
+- **/.Spotlight-V100/
+- **/.Trashes/
+- **/.DocumentRevisions-V100/
+- **/.fseventsd/
+- **/.VolumeIcon.icns
+- **/.com.apple.timemachine.donotpresent
 
 # --- Entire Library & Applications (Strict Data Backup) ---
-- Library/
-- Applications/
+- **/Library/
+- **/Applications/
 
 # --- Cloud & Network Sync Artifacts ---
-- ._*
-- .iCloud
-- *.icloud
-- "iCloud Drive (Archive)"/
-- "Google Drive"/
-- Library/CloudStorage/
-- "Dropbox"/
+- **/.iCloud
+- **/*.icloud
+- **/iCloud Drive (Archive)/
+- **/Google Drive/
+- **/Library/CloudStorage/
+- **/Dropbox/
+
+# --- Other Root Garbage ---
+- **/Network Trash Folder/
+- **/Temporary Items/
