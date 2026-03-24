@@ -57,7 +57,8 @@ def run_backup(config_path, log_to_file=True, dry_run=False):
     if not dry_run:
         os.makedirs(target_dir, exist_ok=True)
 
-    log_file = os.path.join(log_dir, f"{job_id}.log")
+    timestamp_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_file = os.path.join(log_dir, f"{job_id}_{timestamp_str}.log")
     
     def log(msg):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -92,22 +93,27 @@ def run_backup(config_path, log_to_file=True, dry_run=False):
     if dry_run:
         cmd.append("--dry-run")
 
+    # Add explicit includes first (highest priority)
+    includes = config.get('includes', [])
+    for inc in includes:
+        # Use unanchored patterns to be more flexible with source path roots
+        cmd.extend(["--filter", f"+ {inc}"])
+        cmd.extend(["--filter", f"+ {inc}/**"])
+
     # Add filters from the config list
     for f in filters:
         filter_file = Path("config/filters") / f
         if filter_file.exists():
-            with open(filter_file, 'r') as ff:
-                for line in ff:
-                    line = line.strip()
-                    if line and not line.startswith('#'):
-                        cmd.extend(["--filter", line])
+            # Use rsync merge-file syntax (. file)
+            # This correctly handles the +/- prefixes in our filter files.
+            cmd.extend(["--filter", f". {filter_file.absolute()}"])
         else:
             log(f"⚠️ Warning: Filter file {filter_file} not found.")
 
     for exc in excludes:
         cmd.extend(["--exclude", exc])
 
-    if mode == 'full':
+    if mode == 'system':
         source_paths = ["/"]
     
     if not source_paths:

@@ -1,0 +1,29 @@
+# App-specific bloat
+- Adobe/Creative Cloud Libraries/
+- Adobe/CameraRaw/Cache/
+- Adobe/Common/Media Cache Files/
+- Adobe/Common/PTX/
+- **/*.lrlibrary/
+- **/*.lrdata/
+- **/*.lrcat-data
+- Lightroom Catalog Previews.lrdata/
+- Lightroom Catalog Smart Previews.lrdata/
+- Final Cut Pro Library.fcpbundle/*/Render Files/
+- Final Cut Pro Library.fcpbundle/*/Analysis Files/
+- Final Cut Pro Library.fcpbundle/*/Transcoded Media/
+- Capture One/Cache/
+- DaVinci Resolve/CacheClip/
+- DaVinci Resolve/ProxyMedia/
+- Logic/Project File Backups/
+- Ableton/Factory Packs/
+- Audio Music Apps/Web Cache/
+- **/*.omf
+- .caches/photoshop/
+- Figma/DesktopProfile/Canvases/
+- Canva/Caches/
+- Library/Application Support/Slack/Cache/
+- Library/Application Support/Slack/Service Worker/CacheStorage/
+- Library/Application Support/Microsoft/Teams/Cache/
+- Library/Application Support/Discord/Cache/
+- osx-terminal.app/
+- osx-terminal.app-colors-solarized/

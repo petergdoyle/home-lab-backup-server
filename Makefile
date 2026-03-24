@@ -10,36 +10,44 @@ PIP := $(VENV)/bin/pip
 CONFIG_FILES := $(wildcard $(CONFIG_DIR)/*.yaml)
 JOBS := $(patsubst $(CONFIG_DIR)/%.yaml,%,$(CONFIG_FILES))
 
-.PHONY: help setup build deploy stop service-logs dashboard logs clean $(addprefix backup-,$(JOBS))
+.PHONY: help setup build deploy stop service-logs dashboard logs clean \
+	local-clean docker-clean \
+	new-job-config copy-key status remote-cleanup \
+	$(addprefix local-backup-,$(JOBS)) $(addprefix local-dry-run-,$(JOBS)) \
+	$(addprefix local-tail-,$(JOBS)) $(addprefix local-status-,$(JOBS)) \
+	$(addprefix local-kill-,$(JOBS)) \
+	$(addprefix docker-backup-,$(JOBS)) $(addprefix docker-dry-run-,$(JOBS)) \
+	$(addprefix docker-tail-,$(JOBS)) $(addprefix docker-status-,$(JOBS))
 
 help:
 	@echo "🏠 Home-Lab Backup Server"
 	@echo "========================="
-	@echo "Available targets:"
-	@echo "  setup         - Initialize local development environment (venv, ssh keys, dirs)"
-	@echo "  new-job       - Interactive prompt to build a new backup configuration"
-	@echo "  copy-key      - Copy the SSH public key to a remote machine"
-	@echo "  build         - Build Docker images"
-	@echo "  deploy        - Deploy the service using docker-compose"
-	@echo "  stop          - Stop the service"
-	@echo "  service-logs  - View logs from the backup-server container"
-	@echo "  status         - Show overview of all jobs and active status"
-	@echo "  logs           - View container logs (if deployed)"
-	@echo "  clean         - Remove logs and temporary files"
+	@echo "Core Targets:"
+	@echo "  setup              - Initialize local development environment"
+	@echo "  new-job-config     - Interactive prompt to build a new backup configuration"
+	@echo "  copy-key           - Copy the SSH public key to a remote machine"
+	@echo "  setup-remote-ssh    - (Advanced) Fix remote permissions and optionally disable passwords"
+	@echo "  build              - Build Docker images"
+	@echo "  deploy             - Deploy the service using docker-compose"
+	@echo "  stop               - Stop the service"
+	@echo "  service-logs       - View logs from the backup-server container"
+	@echo "  clean              - Full cleanup (local + docker)"
+	@echo "  local-clean        - Remove local venv, logs, and locks"
+	@echo "  docker-clean       - Stop and remove docker containers and volumes"
 	@echo ""
-	@echo "Backup Jobs (dynamically discovered from $(CONFIG_DIR)/):"
-	@$(if $(JOBS), \
-		$(foreach job,$(JOBS),echo "  backup-$(job)  - Run backup for job: $(job)";), \
-		echo "  (No jobs found in $(CONFIG_DIR)/)")
+	@echo "Local Execution (Current Machine -> Remote):"
+	@echo "  local-backup-peters-imac-data  Run local backup for peters-imac-data"
+	@echo "  local-dry-run-peters-imac-data Run dry-run for peters-imac-data"
+	@echo "  remote-cleanup     - (Careful!) Remove junk files from remote host"
+	@echo "  local-status        - Show status of all local backup processes"
+	@echo "  local-tail-[job]    - Tail logs for a local job"
 	@echo ""
-	@$(if $(JOBS), \
-		$(foreach job,$(JOBS),echo "  dry-run-$(job) - Dry-run backup for job: $(job)";), \
-		echo "  (No jobs found in $(CONFIG_DIR)/)")
+	@echo "Docker Execution (Inside Container -> Remote):"
+	@echo "  docker-backup-[job] - Trigger backup inside the container"
+	@echo "  docker-dry-run-[job]- Dry-run backup inside the container"
+	@echo "  docker-status       - Show status of all jobs inside the container"
+	@echo "  docker-tail-[job]   - Tail logs from the container"
 	@echo ""
-	@echo "Log Tailing Jobs:"
-	@$(if $(JOBS), \
-		$(foreach job,$(JOBS),echo "  tail-$(job)    - Tail logs for job: $(job)";), \
-		echo "  (No jobs found in $(CONFIG_DIR)/)")
 
 setup:
 	@echo "🔧 Setting up local environment..."
@@ -56,7 +64,7 @@ setup:
 	@$(PIP) install -r requirements.txt
 	@echo "✅ Setup complete."
 
-new-job:
+new-job-config:
 	@if [ ! -d $(VENV) ]; then echo "Error: Virtual environment not found. Run 'make setup' first."; exit 1; fi
 	@$(PYTHON) $(SCRIPTS_DIR)/build_config.py
 
@@ -65,6 +73,20 @@ copy-key:
 	@read -p "Enter user@hostname (e.g., admin@192.168.1.50): " target; \
 	if [ -z "$$target" ]; then echo "Target cannot be empty."; exit 1; fi; \
 	ssh-copy-id -i $(SSH_DIR)/id_ed25519.pub $$target
+
+remote-cleanup:
+	@echo "🧹 Starting remote cleanup..."
+	@.venv/bin/python3 scripts/remote_cleanup.py
+
+setup-remote-ssh:
+	@read -p "Enter user@host (e.g., peter@192.168.20.12): " target; \
+	if [ -z "$$target" ]; then echo "Target cannot be empty."; exit 1; fi; \
+	read -p "Disable password authentication? (y/n) [n]: " disable_pass; \
+	if [ "$$disable_pass" = "y" ]; then \
+		./scripts/setup_remote_ssh.sh $$target disable-password; \
+	else \
+		./scripts/setup_remote_ssh.sh $$target; \
+	fi
 
 build:
 	docker-compose build
@@ -85,66 +107,81 @@ dashboard:
 logs:
 	docker-compose logs -f
 
-clean:
-	@echo "🧹 Cleaning up..."
+clean: local-clean docker-clean
+
+local-clean:
+	@echo "🧹 Cleaning local environment..."
+	@rm -rf data/logs/*.log
+	@rm -f data/.backup.lock
+	@echo "⚠️  WARNING: This will delete all local backup data (mirror files and archives) in data/."
+	@read -p "Are you sure? [y/N]: " confirm1 && [ "$$confirm1" = "y" ] || (echo "Aborted."; exit 1)
+	@read -p "Type 'DELETE' to confirm archiving/deletion: " confirm2 && [ "$$confirm2" = "DELETE" ] || (echo "Aborted."; exit 1)
+	@# Delete job-specific mirror directories in data/ (except logs, ssh, and backups self-folder)
+	@find data -maxdepth 1 -type d ! -name data ! -name logs ! -name backups ! -name ssh -exec rm -rf {} +
+	@# ALSO delete everything INSIDE data/backups/ (where snapshots or mis-routed mirrors might be)
+	@find data/backups -mindepth 1 ! -name .gitkeep -exec rm -rf {} +
+	@echo "✅ Local environment cleaned."
+
+docker-clean:
+	@echo "🧹 Cleaning Docker environment..."
 	docker-compose down -v
-	rm -rf $(VENV)
-	@echo "✅ Cleaned."
+	@echo "✅ Docker environment cleaned."
 
-# Dynamic backup targets
-$(addprefix backup-,$(JOBS)): backup-%: $(CONFIG_DIR)/%.yaml
+# --- LOCAL TARGETS ---
+
+$(addprefix local-backup-,$(JOBS)): local-backup-%: $(CONFIG_DIR)/%.yaml
 	@if [ ! -d $(VENV) ]; then echo "Error: Virtual environment not found. Run 'make setup' first."; exit 1; fi
-	@echo "🚀 Starting backup job: $*"
+	@echo "🚀 Starting local backup job: $*"
 	@DELETE_EXCLUDED=$(DELETE_EXCLUDED) $(PYTHON) $(SCRIPTS_DIR)/backup.py $< > /dev/null 2>&1 & \
-	if [ "$(TAIL_LOG)" = "true" ]; then \
-		echo "📊 Tailing log for $*..."; \
-		sleep 1; \
-		tail -f data/logs/$*.log; \
-	else \
-		echo "✅ Job $* is now running in background."; \
-		echo "   Tail logs with: make tail-$*"; \
-	fi
+	echo "✅ Job $* is now running in background."
 
-# Dynamic dry-run targets
-$(addprefix dry-run-,$(JOBS)): dry-run-%: $(CONFIG_DIR)/%.yaml
+$(addprefix local-dry-run-,$(JOBS)): local-dry-run-%: $(CONFIG_DIR)/%.yaml
 	@if [ ! -d $(VENV) ]; then echo "Error: Virtual environment not found. Run 'make setup' first."; exit 1; fi
-	@echo "🧪 Starting dry-run backup job: $*"
+	@echo "🧪 Starting local dry-run backup job: $*"
 	DELETE_EXCLUDED=$(DELETE_EXCLUDED) $(PYTHON) $(SCRIPTS_DIR)/backup.py $< --dry-run
 
-# Dynamic tail targets
-$(addprefix tail-,$(JOBS)): tail-%:
+$(addprefix local-tail-,$(JOBS)): local-tail-%:
 	@if [ -f data/logs/$*.log ]; then \
 		tail -f data/logs/$*.log; \
 	else \
-		echo "⚠️ No log file found for $*. Run a backup first."; \
+		echo "⚠️ No local log file found for $*."; \
 	fi
 
-# Dynamic status targets
-$(addprefix status-,$(JOBS)): status-%:
-	@PID=$$(pgrep -f "backup.py $(CONFIG_DIR)/$*.yaml"); \
+$(addprefix local-status-,$(JOBS)): local-status-%:
+	@PID=$$(pgrep -f "backup.py $(CONFIG_DIR)/$*.yaml" || true); \
 	if [ -n "$$PID" ]; then \
-		echo "🟢 Job $* is RUNNING (PID: $$PID)"; \
-		echo "   Last output: $$(tail -n 1 data/logs/$*.log 2>/dev/null || echo 'Starting...')"; \
+		echo "🟢 Local Job $* is RUNNING (PID: $$PID)"; \
 	else \
-		echo "⚪ Job $* is IDLE"; \
-		if [ -f data/logs/$*.log ]; then \
-			echo "   Last Activity: $$(grep -oE '\[[-0-9: ]+\]' data/logs/$*.log | tail -n 1 | tr -d '[]' || echo 'Unknown')"; \
-		fi \
+		echo "⚪ Local Job $* is IDLE"; \
 	fi
 
-# Global status
-status:
-	@echo "📊 Home-Lab Backup Status Overview"
-	@echo "================================"
-	@$(foreach job,$(JOBS),$(MAKE) --no-print-directory status-$(job);)
-	@LOCK_PID=$$(lsof -t data/backups/.backup.lock 2>/dev/null); \
-	if [ -n "$$LOCK_PID" ]; then \
-		echo "\n🔒 Global Lock held by PID: $$LOCK_PID"; \
-	else \
-		echo "\n🔓 Global Lock is FREE"; \
-	fi
+local-status:
+	@echo "📊 Local Backup Status"
+	@$(foreach job,$(JOBS),$(MAKE) --no-print-directory local-status-$(job);)
 
-# Dynamic kill targets
-$(addprefix backup-kill-,$(JOBS)): backup-kill-%:
-	@echo "🛑 Stopping backup job: $*"
-	@pkill -f "backup.py $(CONFIG_DIR)/$*.yaml" || echo "⚠️ No active job found for $*"
+$(addprefix local-kill-,$(JOBS)): local-kill-%:
+	@echo "🛑 Stopping local backup job: $*"
+	@pkill -f "backup.py $(CONFIG_DIR)/$*.yaml" || echo "⚠️ No active local job found for $*"
+
+# --- DOCKER TARGETS ---
+
+$(addprefix docker-backup-,$(JOBS)): docker-backup-%:
+	@echo "🚀 Triggering backup job inside container: $*"
+	docker exec backup-server python scripts/backup.py $(CONFIG_DIR)/$*.yaml
+
+$(addprefix docker-dry-run-,$(JOBS)): docker-dry-run-%:
+	@echo "🧪 Running dry-run inside container: $*"
+	docker exec backup-server python scripts/backup.py $(CONFIG_DIR)/$*.yaml --dry-run
+
+$(addprefix docker-tail-,$(JOBS)): docker-tail-%:
+	docker exec backup-server tail -f data/logs/$*.log
+
+$(addprefix docker-status-,$(JOBS)): docker-status-%:
+	@echo "Checking status of $* inside container..."
+	@docker exec backup-server pgrep -f "backup.py $(CONFIG_DIR)/$*.yaml" > /dev/null \
+		&& echo "🟢 Docker Job $* is RUNNING" \
+		|| echo "⚪ Docker Job $* is IDLE"
+
+docker-status:
+	@echo "📊 Docker Container Backup Status"
+	@$(foreach job,$(JOBS),$(MAKE) --no-print-directory docker-status-$(job);)

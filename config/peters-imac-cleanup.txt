@@ -1,0 +1,20 @@
+AF1QipPSeyPd6rkg-qwdqNqTXQRiNersBgT2khC5dPHp.webloc
+SplitJoin.html
+backup_macos_home.sh
+echo
+mbox
+networkQ
+pdf.list
+rsync_restore.excludes
+rsync_restore.sh
+travelport-kafka-certs.zip
+CmapToolsLogs/
+Movies/
+Music/
+Pictures/Frame-25-04-2025-12-28-20.tiff
+Pictures/Lightroom Saved Photos/
+Public/Drop Box/
+backup_logs/
+data/mission_launches.csv
+drawio/hashicorp-draw-io/
+untitled folder/

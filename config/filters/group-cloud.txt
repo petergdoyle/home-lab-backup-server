@@ -1,0 +1,10 @@
+# Cloud Storage artifacts
+- .dropbox/
+- .dropbox-dist/
+- **/Google Drive/
+- **/Library/CloudStorage/
+- **/Dropbox/
+- **/.iCloud
+- **/*.icloud
+- **/iCloud Drive (Archive)/
+- Creative Cloud Files/

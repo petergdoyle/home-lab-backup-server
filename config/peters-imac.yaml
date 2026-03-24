@@ -5,13 +5,12 @@ port: 22
 ssh_key: ssh/id_ed25519
 mode: data
 filters:
-- common-includes.txt
-- macos-data.txt
 - common-excludes.txt
+- macos-data.txt
+includes: []
 source_paths:
-- /Users/peter
-exclude:
-- "phdata-exported/Projects/"
-snapshot: true
+- /Users/peterdoyle
+exclude: []
+snapshot: false
 delete_excluded: true
-backup_root: data/backups 
+backup_root: /backup

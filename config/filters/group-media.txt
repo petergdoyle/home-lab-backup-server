@@ -1,0 +1,18 @@
+# Media library caches
+- Photos Library.photoslibrary/
+- Photo Booth Library/
+- Luminar Neo Catalog/
+- Lightroom Saved Photos/
+- iPhoto Library.photolibrary/
+- Library/Caches/com.apple.Music/
+- Library/Caches/com.apple.iTunes/
+- iTunes/iTunes Media/Apple Music/
+- Music/Music/Media.localized/Subscription Play Cache/
+- Spotify/PersistentCache/
+- Spotify/Users/*/Data/
+- Spotify/Users/*/Browser/
+- Plex Media Server/Cache/
+- Plex Media Server/Plug-in Support/Caches/
+- Plex Media Server/Media/localhost/
+- Library/Caches/com.netflix.Netflix/
+- Library/Caches/com.hulu.Plus/

@@ -1,0 +1,18 @@
+# Virtual Machine and Disk Images
+- *.vmdk
+- *.vmx
+- *.vdi
+- *.vbox
+- *.pvm
+- *.hdd
+- *.vhd
+- *.vhdx
+- *.qcow2
+- *.ova
+- *.ovf
+- *.iso
+- *.img
+- .vagrant/
+- vagrant/
+- VirtualBox VMs/
+- Virtual Box VMs/

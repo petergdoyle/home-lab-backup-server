@@ -1,29 +1,16 @@
-# --- Exclude All Other Hidden Files/Folders at Root ---
-- /.*
-
-# --- System & Application Temp Files ---
-- **/.DS_Store
-- **/.AppleDouble
-- **/.LSOverride
-- **/.Spotlight-V100/
-- **/.Trashes/
-- **/.DocumentRevisions-V100/
-- **/.fseventsd/
-- **/.VolumeIcon.icns
-- **/.com.apple.timemachine.donotpresent
-
-# --- Entire Library & Applications (Strict Data Backup) ---
-- **/Library/
-- **/Applications/
-
-# --- Cloud & Network Sync Artifacts ---
-- **/.iCloud
-- **/*.icloud
-- **/iCloud Drive (Archive)/
-- **/Google Drive/
-- **/Library/CloudStorage/
-- **/Dropbox/
-
-# --- Other Root Garbage ---
-- **/Network Trash Folder/
-- **/Temporary Items/
+# macOS Data Mode Essentials (Unanchored)
+- Library/
+- Applications/
+- System/
+- Volumes/
+- Network/
+- dev/
+- proc/
+- sys/
+- tmp/
+- run/
+- Desktop/
+- Documents/
+- Downloads/
+- Screen Shots/
+- mnt/
