@@ -4,9 +4,10 @@ __pycache__/
 *.py[cod]
 
 # App Data
-data/
-ssh/id_ed25519
-ssh/id_ed25519.pub
+data/*
+!data/.gitkeep
+ssh/*
+!ssh/.gitkeep
 
 # macOS
 .DS_Store
