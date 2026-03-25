@@ -1,4 +1,3 @@
-# macOS Data Mode Essentials (Unanchored)
 - Library/
 - Applications/
 - System/
@@ -9,8 +8,4 @@
 - sys/
 - tmp/
 - run/
-- Desktop/
-- Documents/
-- Downloads/
-- Screen Shots/
 - mnt/

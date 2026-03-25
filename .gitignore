@@ -13,3 +13,7 @@ ssh/id_ed25519.pub
 
 # Docker
 .docker_temp/
+
+# Configuration
+config/*.yaml
+!config/example.yaml

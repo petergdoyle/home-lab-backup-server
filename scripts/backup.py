@@ -24,9 +24,9 @@ def run_backup(config_path, log_to_file=True, dry_run=False):
 
     # Handle local vs docker pathing
     if backup_root == '/backup' and not os.path.exists('/backup'):
-        # If /backup isn't available (running locally), use the 'data' dir in project root
+        # If /backup isn't available (running locally), use the 'data/backups' dir in project root
         project_root = Path(__file__).parent.parent
-        backup_root = str(project_root / "data")
+        backup_root = str(project_root / "data" / "backups")
         print(f"ℹ️ Redirecting /backup to local {backup_root}")
 
     # Ensure backup_root exists for the lock file
@@ -156,7 +156,12 @@ def run_backup(config_path, log_to_file=True, dry_run=False):
     if success and config.get('snapshot', False) and not dry_run:
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         archive_name = f"{job_id}_{timestamp}.tar.gz"
-        archive_path = os.path.join(backup_root, archive_name)
+        
+        # Save archives in 'data/archive'
+        archive_root = os.path.join(os.path.dirname(backup_root), "archive")
+        os.makedirs(archive_root, exist_ok=True)
+        archive_path = os.path.join(archive_root, archive_name)
+        
         log(f"📦 Creating snapshot archive: {archive_name} ...")
         
         tar_cmd = ["tar", "-czf", archive_path, "-C", backup_root, job_id]

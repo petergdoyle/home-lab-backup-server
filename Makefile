@@ -36,22 +36,30 @@ help:
 	@echo "  docker-clean       - Stop and remove docker containers and volumes"
 	@echo ""
 	@echo "Local Execution (Current Machine -> Remote):"
-	@echo "  local-backup-peters-imac-data  Run local backup for peters-imac-data"
-	@echo "  local-dry-run-peters-imac-data Run dry-run for peters-imac-data"
-	@echo "  remote-cleanup     - (Careful!) Remove junk files from remote host"
-	@echo "  local-status        - Show status of all local backup processes"
-	@echo "  local-tail-[job]    - Tail logs for a local job"
+	@for job in $(JOBS); do \
+		if [ "$$job" != "example" ]; then \
+			echo "  local-backup-$$job      Run local backup for $$job"; \
+			echo "  local-dry-run-$$job     Run dry-run for $$job"; \
+		fi; \
+	done
+	@echo "  remote-cleanup            - (Careful!) Remove junk files from remote host"
+	@echo "  local-status               - Show status of all local backup processes"
+	@echo "  local-tail-[job]           - Tail logs for a local job"
 	@echo ""
 	@echo "Docker Execution (Inside Container -> Remote):"
-	@echo "  docker-backup-[job] - Trigger backup inside the container"
-	@echo "  docker-dry-run-[job]- Dry-run backup inside the container"
-	@echo "  docker-status       - Show status of all jobs inside the container"
-	@echo "  docker-tail-[job]   - Tail logs from the container"
+	@for job in $(JOBS); do \
+		if [ "$$job" != "example" ]; then \
+			echo "  docker-backup-$$job      Trigger backup inside container for $$job"; \
+			echo "  docker-dry-run-$$job     Run dry-run inside container for $$job"; \
+		fi; \
+	done
+	@echo "  docker-status              - Show status of all jobs inside the container"
+	@echo "  docker-tail-[job]          - Tail logs from the container"
 	@echo ""
 
 setup:
 	@echo "🔧 Setting up local environment..."
-	mkdir -p $(CONFIG_DIR) $(SCRIPTS_DIR) $(DATA_DIR)/backups $(DATA_DIR)/logs $(SSH_DIR)
+	mkdir -p $(CONFIG_DIR) $(SCRIPTS_DIR) $(DATA_DIR)/backups $(DATA_DIR)/archive $(DATA_DIR)/logs $(SSH_DIR)
 	@if [ ! -d $(VENV) ]; then \
 		echo "Creating virtual environment..."; \
 		python3 -m venv $(VENV); \
@@ -112,14 +120,15 @@ clean: local-clean docker-clean
 local-clean:
 	@echo "🧹 Cleaning local environment..."
 	@rm -rf data/logs/*.log
-	@rm -f data/.backup.lock
+	@rm -f data/backups/.backup.lock
 	@echo "⚠️  WARNING: This will delete all local backup data (mirror files and archives) in data/."
 	@read -p "Are you sure? [y/N]: " confirm1 && [ "$$confirm1" = "y" ] || (echo "Aborted."; exit 1)
 	@read -p "Type 'DELETE' to confirm archiving/deletion: " confirm2 && [ "$$confirm2" = "DELETE" ] || (echo "Aborted."; exit 1)
 	@# Delete job-specific mirror directories in data/ (except logs, ssh, and backups self-folder)
-	@find data -maxdepth 1 -type d ! -name data ! -name logs ! -name backups ! -name ssh -exec rm -rf {} +
-	@# ALSO delete everything INSIDE data/backups/ (where snapshots or mis-routed mirrors might be)
+	@find data -maxdepth 1 -type d ! -name data ! -name logs ! -name backups ! -name archive ! -name ssh -exec rm -rf {} +
+	@# ALSO delete everything INSIDE data/backups/ and data/archive/
 	@find data/backups -mindepth 1 ! -name .gitkeep -exec rm -rf {} +
+	@find data/archive -mindepth 1 ! -name .gitkeep -exec rm -rf {} +
 	@echo "✅ Local environment cleaned."
 
 docker-clean:

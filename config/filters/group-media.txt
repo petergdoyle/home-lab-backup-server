@@ -1,4 +1,7 @@
-# Media library caches
+# Heavy Media and bulky libraries
+- Movies/
+- Music/
+- Pictures/
 - Photos Library.photoslibrary/
 - Photo Booth Library/
 - Luminar Neo Catalog/
