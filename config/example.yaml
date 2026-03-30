@@ -12,6 +12,14 @@ source_paths:
   - "/home/pi/documents"
   - "/etc/nginx"
 
+# filter files (found in config/filters/)
+filters:
+  - common-excludes.txt
+  - linux-data.txt
+
+retries: 3
+retry_interval: 10 # minutes
+
 # additional excludes
 exclude:
   - "*.tmp"

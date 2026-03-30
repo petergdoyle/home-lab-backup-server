@@ -15,6 +15,7 @@ JOBS := $(patsubst $(CONFIG_DIR)/%.yaml,%,$(CONFIG_FILES))
 	new-job-config copy-key status remote-cleanup \
 	$(addprefix local-backup-,$(JOBS)) $(addprefix local-dry-run-,$(JOBS)) \
 	$(addprefix local-tail-,$(JOBS)) $(addprefix local-status-,$(JOBS)) \
+	$(addprefix local-show-excluded-,$(JOBS)) \
 	$(addprefix local-kill-,$(JOBS)) \
 	$(addprefix docker-backup-,$(JOBS)) $(addprefix docker-dry-run-,$(JOBS)) \
 	$(addprefix docker-tail-,$(JOBS)) $(addprefix docker-status-,$(JOBS))
@@ -40,6 +41,7 @@ help:
 		if [ "$$job" != "example" ]; then \
 			echo "  local-backup-$$job      Run local backup for $$job"; \
 			echo "  local-dry-run-$$job     Run dry-run for $$job"; \
+			echo "  local-show-excluded-$$job  Show which files are excluded for $$job"; \
 		fi; \
 	done
 	@echo "  remote-cleanup            - (Careful!) Remove junk files from remote host"
@@ -148,6 +150,11 @@ $(addprefix local-dry-run-,$(JOBS)): local-dry-run-%: $(CONFIG_DIR)/%.yaml
 	@if [ ! -d $(VENV) ]; then echo "Error: Virtual environment not found. Run 'make setup' first."; exit 1; fi
 	@echo "🧪 Starting local dry-run backup job: $*"
 	DELETE_EXCLUDED=$(DELETE_EXCLUDED) $(PYTHON) $(SCRIPTS_DIR)/backup.py $< --dry-run
+
+$(addprefix local-show-excluded-,$(JOBS)): local-show-excluded-%: $(CONFIG_DIR)/%.yaml
+	@if [ ! -d $(VENV) ]; then echo "Error: Virtual environment not found. Run 'make setup' first."; exit 1; fi
+	@echo "🔍 Showing excluded files for job: $*"
+	@$(PYTHON) $(SCRIPTS_DIR)/backup.py $< --show-excluded
 
 $(addprefix local-tail-,$(JOBS)): local-tail-%:
 	@if [ -f data/logs/$*.log ]; then \
